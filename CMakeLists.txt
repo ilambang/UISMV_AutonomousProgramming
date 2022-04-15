@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.1.0)
 project(shell_simulation)
 
-find_package(catkin REQUIRED COMPONENTS roscpp std_msgs)
+find_package(catkin REQUIRED COMPONENTS roscpp std_msgs sensor_msgs)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -9,7 +9,7 @@ find_package(catkin REQUIRED COMPONENTS roscpp std_msgs)
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS std_msgs
+  CATKIN_DEPENDS std_msgs sensor_msgs
 )
 
 ###########
@@ -39,6 +39,7 @@ include_directories(
 add_executable(${PROJECT_NAME}_node
     src/shell_simulation_node.cpp
     src/example_publisher.cpp
+    src/example_subscriber.cpp
 )
 
 ## Rename C++ executable without prefix
