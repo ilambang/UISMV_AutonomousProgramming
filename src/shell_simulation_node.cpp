@@ -53,8 +53,13 @@ int main(int argc, char **argv) {
     int count = 0;
     const int max_count = 100;
 
+    std_msgs::Float64 msg;
+
     while (ros::ok() && count < max_count) {
-        node.publish(steering_value);
+        
+        msg.data = steering_value;
+        steeringPublisher.publish(msg);
+        ros::spinOnce();
         ros::spinOnce();
         rate.sleep();
         count++;
