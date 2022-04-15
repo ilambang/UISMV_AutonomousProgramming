@@ -41,11 +41,11 @@ int main(int argc, char **argv) {
     ros::NodeHandle n;
 
     //Subsribe to certain topic
-    brake_Pub = nh.advertise<std_msgs::Float64>("brake_command", 8);
-    throttle_Pub = nh.advertise<std_msgs::Float64>("throttle_command", 8);
-    steering_Pub = nh.advertise<std_msgs::Float64>("steering_command", 8);
-    gear_Pub = nh.advertise<std_msgs::String>("gear_command", 8);
-    handbrake_Pub = nh.advertise<std_msgs::Bool>("handbrake_command", 8);
+    brake_Pub = n.advertise<std_msgs::Float64>("brake_command", 8);
+    throttle_Pub = n.advertise<std_msgs::Float64>("throttle_command", 8);
+    steering_Pub = n.advertise<std_msgs::Float64>("steering_command", 8);
+    gear_Pub = n.advertise<std_msgs::String>("gear_command", 8);
+    handbrake_Pub = n.advertise<std_msgs::Bool>("handbrake_command", 8);
     
 
     ros::Rate rate(10);
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
     while (ros::ok() && count < max_count) {
         
         msg.data = steering_value;
-        steeringPublisher.publish(msg);
+        steering_Pub.publish(msg);
         ros::spinOnce();
         ros::spinOnce();
         rate.sleep();
