@@ -39,7 +39,7 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
 
     ROS_INFO("newX = %f & newY = %f", newX, newY);
 }
-void speedoCallback(const std_msgs::Float32::ConstPtr& msg) {
+void speedometerCallback(const std_msgs::Float32::ConstPtr& msg) {
     double speed = msg->data;
 
     ROS_INFO("speed = %f", speed);
