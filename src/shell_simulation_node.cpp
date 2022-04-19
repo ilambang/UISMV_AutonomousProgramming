@@ -64,6 +64,8 @@ int main(int argc, char **argv) {
     const int max_count = 100;
 
     std_msgs::Float64 msg;
+    
+    ros::spin();
 
     while (ros::ok() && count < max_count) {
         
