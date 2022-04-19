@@ -33,6 +33,15 @@ float lat,longitude,alt;
 //   std::cout << msg->longitude << msg->latitude << msg->altitude << std::endl;
 // }
 
+void odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
+    double newX = msg->pose.pose.position.x;
+    double newY = msg->pose.pose.position.y;
+
+    ROS_INFO("newX = %f", newX);
+    ROS_INFO("newY = %f", newX);
+}
+
+
 int main(int argc, char **argv) {
     //Initialize the ros
     ros::init(argc, argv, "shell_simulation_node");
@@ -40,14 +49,15 @@ int main(int argc, char **argv) {
     //Creating Ros handle
     ros::NodeHandle n;
 
-    //Subsribe to certain topic
+    //Publishe to certain topic
     brake_Pub = n.advertise<std_msgs::Float64>("brake_command", 8);
     throttle_Pub = n.advertise<std_msgs::Float64>("throttle_command", 8);
     steering_Pub = n.advertise<std_msgs::Float64>("steering_command", 8);
     gear_Pub = n.advertise<std_msgs::String>("gear_command", 8);
     handbrake_Pub = n.advertise<std_msgs::Bool>("handbrake_command", 8);
     
-
+    //Subscribe to certain topic
+    odom_Sub = nh.subscribe("carla/ego_vehicle/odometry", 8, odomCallback);
     ros::Rate rate(10);
 
     int count = 0;
