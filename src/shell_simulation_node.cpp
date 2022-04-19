@@ -346,11 +346,92 @@ void calculateEnergy(const nav_msgs::Odometry::ConstPtr& msg, double newX, doubl
 void initTarget() {
     // menyimpan target
     
+    // belok kiri segitiga
+      targetList.push(Target{-93, -13, MAJU});
+    targetList.push(Target{-100, -18, MAJU});
+    targetList.push(Target{-129, -45.5, MAJU});
+    targetList.push(Target{-143, -55, MAJU});
+    targetList.push(Target{-145.75, -75.7, MAJU});
+
     // mundur, belok kiri
-  	targetList.push(Target{-77.86, 16.8, MAJU});
-    targetList.push(Target{-77.86, 30, MAJU});
-    targetList.push(Target{-77.86, 194.16, MAJU});
+    targetList.push(Target{-145.47, -7.79, MUNDUR});
+    targetList.push(Target{-145.47, -0.9, MUNDUR});
+    targetList.push(Target{-145.47, -0.9, MUNDUR});
+    targetList.push(Target{-104.58, -0.5, MUNDUR});
+    targetList.push(Target{-52.68, -0.91, MUNDUR});
+
+    // maju lawan arah, belok kanan, lurus
+    targetList.push(Target{-77.86, -0.91, MAJU});
+    targetList.push(Target{-77.86, 20, MAJU});
+    
+    // maju, belok kanan
+    targetList.push(Target{-77.86, 145, MAJU});
+    targetList.push(Target{-77, 171, MAJU});
+    targetList.push(Target{-75.1, 181.2, MAJU});
+    targetList.push(Target{-64, 193, MAJU});
+    targetList.push(Target{-53.3, 194.16, MAJU});
     targetList.push(Target{-15.45, 194.16, MAJU});
+    
+    //belok kanan lurus
+    targetList.push(Target{-6.1, 191.5, MAJU});
+    targetList.push(Target{-2.6, 185.2, MAJU});
+    targetList.push(Target{-3.3, 177.4, MAJU});
+    targetList.push(Target{-3.7, 151.0, MAJU});
+    targetList.push(Target{-4.32, 110.51, MAJU});
+    targetList.push(Target{-6.7, 34.8, MAJU});
+    
+    //bunderan
+    targetList.push(Target{-9.8, 23.9, MAJU});
+    targetList.push(Target{-18.4, 8.9, MAJU});
+    targetList.push(Target{-21.7, -1.2, MAJU});
+    targetList.push(Target{-19.2, -10.4, MAJU});
+    targetList.push(Target{-12.9, -17.6, MAJU});
+    targetList.push(Target{-2.3, -22.1, MAJU});
+    targetList.push(Target{9.3, -19.4, MAJU});
+    targetList.push(Target{19.3, -10.0, MAJU});
+    targetList.push(Target{24.6, -7.3, MAJU});
+    
+    //lurus, belok kanan
+    targetList.push(Target{30.5, -7.1, MAJU});
+    targetList.push(Target{220.1, -9.7, MAJU});
+    targetList.push(Target{226.4, -13.1, MAJU});
+    targetList.push(Target{230.8, -19.1, MAJU});
+    targetList.push(Target{231.1, -24.9, MAJU});
+    
+    //belok kanan, lurus
+    targetList.push(Target{230.7, -45.8, MAJU});
+    targetList.push(Target{226.9, -52.8, MAJU});
+    targetList.push(Target{220.7, -57.3, MAJU});
+    targetList.push(Target{213.8, -58.1, MAJU});
+    
+    //belok kiri
+    targetList.push(Target{180.9, -58.3, MAJU});
+    targetList.push(Target{170.1, -65.0, MAJU});
+    targetList.push(Target{167.2, -73.6, MAJU});
+    targetList.push(Target{167.1, -87.5, MAJU});
+    
+    //belok kanan panjang
+    targetList.push(Target{166.5, -96.9, MAJU});
+    targetList.push(Target{164.1, -105.4, MAJU});
+    targetList.push(Target{158.4, -115.1, MAJU});
+    targetList.push(Target{154.0, -120.2, MAJU});
+    targetList.push(Target{146.8, -125.1, MAJU});
+    targetList.push(Target{139.7, -127.8, MAJU});
+    targetList.push(Target{133.2, -128.8, MAJU});
+    
+    //lurus, belok kiri
+    targetList.push(Target{5.2, -130.7, MAJU});
+    targetList.push(Target{-5.5, -135.1, MAJU});
+    targetList.push(Target{-8.6, -141.6, MAJU});
+    
+    //lurus, belok kanan, lurus
+    targetList.push(Target{-8.9, -147.5, MAJU});
+    targetList.push(Target{-8.8, -188.6, MAJU});
+    targetList.push(Target{-9.2, -193.1, MAJU});
+    targetList.push(Target{-13.3, -196.0, MAJU});
+    targetList.push(Target{-19.2, -196.9, MAJU});
+    targetList.push(Target{-38.7, -196.9, MAJU});
+    targetList.push(Target{-50.6, -193.6, MAJU});
 }
 /* ======================================== */
 
