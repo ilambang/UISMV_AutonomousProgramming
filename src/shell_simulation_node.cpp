@@ -37,8 +37,7 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
     double newX = msg->pose.pose.position.x;
     double newY = msg->pose.pose.position.y;
 
-    ROS_INFO("newX = %f", newX);
-    ROS_INFO("newY = %f", newY);
+    ROS_INFO("newX = %f & newY = %f", newX, newY);
 }
 
 
