@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
     handbrake_Pub = n.advertise<std_msgs::Bool>("handbrake_command", 8);
     
     //Subscribe to certain topic
-    odometry_Sub = nh.subscribe("carla/ego_vehicle/odometry", 8, odomCallback);
+    odometry_Sub = n.subscribe("carla/ego_vehicle/odometry", 8, odomCallback);
     ros::Rate rate(10);
 
     int count = 0;
