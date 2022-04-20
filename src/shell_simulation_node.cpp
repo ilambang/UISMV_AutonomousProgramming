@@ -346,7 +346,7 @@ void initTarget() {
 }
 
 
-voidmovetoNewCoords(const nav_msgs::Odometry::ConstPtr& msg) {
+void movetoNewCoords(const nav_msgs::Odometry::ConstPtr& msg) {
     double coordsX = msg->pose.pose.position.x;
     double coordsY = msg->pose.pose.position.y;
 
