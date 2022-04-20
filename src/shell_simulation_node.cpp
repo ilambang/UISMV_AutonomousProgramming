@@ -364,7 +364,7 @@ void movetoNewCoords(const nav_msgs::Odometry::ConstPtr& msg) {
     ROS_INFO("newX = %f & newY = %f", coordsX, coordsY);
 
     coordQueue target = targetList.front(); //Find most upper queue
-    double distance = CalcDistance_notsqrt(target.x, target.y, newX, newY);
+    double distance = CalcDistance_notsqrt(target.x, target.y, coordsX, coordsY);
 
     if(distance < 20) { //safe distance for the confirmed checkpoint
         targetList.pop();
