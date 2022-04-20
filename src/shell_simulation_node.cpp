@@ -45,7 +45,7 @@ struct coordQueue {
     double y;
     int fwrd_bwrd;
 };
-std::queue<coordQueue> coordQueue;
+std::queue<coordQueue> targetList;
 double lastX = -77.9;
 double lastY = -25;
 int cntTarget = 0;
