@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.1.0)
 project(shell_simulation)
 
-find_package(catkin REQUIRED COMPONENTS roscpp std_msgs nav_msgs)
+find_package(catkin REQUIRED COMPONENTS roscpp std_msgs nav_msgs carla_msgs)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -9,7 +9,7 @@ find_package(catkin REQUIRED COMPONENTS roscpp std_msgs nav_msgs)
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS std_msgs nav_msgs
+  CATKIN_DEPENDS std_msgs nav_msgs carla_msgs
 )
 
 ###########
