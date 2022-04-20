@@ -361,17 +361,17 @@ void movetoNewCoords(const nav_msgs::Odometry::ConstPtr& msg) {
         return;
     }
 
-    ROS_INFO("newX = %f & newY = %f", coordsX, coorsY);
+    ROS_INFO("newX = %f & newY = %f", coordsX, coordsY);
 
     coordQueue target = targetList.front(); //Find most upper queue
     double distance = CalcDistance_notsqrt(target.x, target.y, newX, newY);
 
     if(distance < 20) { //safe distance for the confirmed checkpoint
-        coordQueue.pop();
+        targetList.pop();
     }
 
-    if (coordQueue.empty()){
-        set_throttle(0.0)
+    if (targetList.empty()){
+        set_throttle(0.0);
         set_brake(1.0);
         set_handbrake(true);
     }
