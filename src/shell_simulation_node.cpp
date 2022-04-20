@@ -1,457 +1,366 @@
-/*
-    Shell Simulation
-    by Iman Herlambang Suherman, Adiro Pradaya Gahana, Ahmad Akbar Habibillah
-    Nakoela Team
-
-*/
-
-/*Include ROS library and it's dependency*/
 #include <ros/ros.h>
-#include <stdlib.h>
 #include <string>
-#include <queue>
 #include <cmath>
-
-/*Include standard format library*/
+#include <vector>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Float32.h>
 #include <std_msgs/String.h>
-#include <std_msgs/Bool.h>
 #include <nav_msgs/Odometry.h>
+#include <carla_msgs/CarlaLaneInvasionEvent.h>
 
-/*Define Constants*/
-#define PI 3.14159265358979323846
-#define PI_MULT_2 6.283185
-#define PI_DIV_2 1.570796
-#define FORWARD 0
-#define BACKWARD 1
+ros::Publisher throttlePublisher;
+ros::Publisher brakePublisher;
+ros::Publisher gearPublisher;
+ros::Publisher steeringPublisher;
+ros::Subscriber odomSubscriber;
+ros::Subscriber speedometerSubscriber;
+ros::Subscriber lane_invasionSubscriber;
 
-/*Create object for publishing data or publisher*/
-ros::Publisher brake_Pub;
-ros::Publisher throttle_Pub;
-ros::Publisher steering_Pub;
-ros::Publisher gear_Pub;
-ros::Publisher handbrake_Pub;
-
-/*Create object for subscribing sensor data*/
-ros::Subscriber odometry_Sub;
-ros::Subscriber speedometer_Sub;
-
-/* ======================================== */
-/* === global vars and data type section == */
-/* ======================================== */
-struct coordQueue {
-    double x;
-    double y;
-    int fwrd_bwrd;
-};
-std::queue<coordQueue> targetList;
-double lastX = -77.9;
-double lastY = -25;
-int cntTarget = 0;
-int needBrake = 0;
-double steerVal = 0.0;
-double steerMult = 1.0;
-double targetThrottle = 0.6;
-
-double last_throttle_value = 0.0;
-double last_steering_value = 0.0;
-bool last_handbrake_value = 0.0;
-double last_brake_value = 0.0;
-std::string last_gear_value = "forward";
-
-double angle;
-
-/* Publisher Functions  */
+double Throttle_0 = 0.0;
+double Steering_0 = 0.0;
+double Brake_0=0.0;
+std::string lastGear = "forward";
 
 
-void set_throttle(double x) {
-    // range: 0.0 to 1.0
-    if (last_throttle_value == x) {
-        return;
-    }
-
-    last_throttle_value = x;
+void throttle(double x) {
+    Throttle_0 = x;
     std_msgs::Float64 msg;
     msg.data = x;
-    throttle_Pub.publish(msg);
+    throttlePublisher.publish(msg);
     ros::spinOnce();
 }
 
-void set_brake(double x) {
-    // range: 0.0 to 1.0
-    if (last_brake_value == x) {
-        return;
-    }
-    last_brake_value = x;
-    std_msgs::Float64 msg;
-    msg.data = x;
-    brake_Pub.publish(msg);
-    ros::spinOnce();
-}
 
-void set_gear(std::string x) {
-    // "forward" or "reverse"
-    if (last_gear_value == x) {
-        return;
-    }
+void gear(std::string x) {
     std_msgs::String msg;
     msg.data = x;
-    last_gear_value = x;
-    gear_Pub.publish(msg);
+    lastGear = x;
+    gearPublisher.publish(msg);
     ros::spinOnce();
 }
 
-void set_handbrake(bool x) {
-    // true or false
-    if (last_handbrake_value == x) {
-        return;
-    }
-    last_handbrake_value = x;
-    std_msgs::Bool msg;
-    msg.data = x;
-    handbrake_Pub.publish(msg);
-    ros::spinOnce();
-}
-
-void set_steering(double x) {
-    // -1.0 to 1.0
-    if (abs(last_steering_value - x) < 0.0005) {
-        return;
-    }
-    last_steering_value = x;
+void steering(double x) {
+    if (abs(Steering_0 - x) < 0.01){
+		return;
+	}
+    Steering_0 = x;
     std_msgs::Float64 msg;
     msg.data = x;
-    steering_Pub.publish(msg);
+    steeringPublisher.publish(msg);
+    ros::spinOnce();
+}
+void brake(double x) {
+    Brake_0 = x;
+    std_msgs::Float64 msg;
+    msg.data = x;
+    brakePublisher.publish(msg);
     ros::spinOnce();
 }
 
-/* ======================================== */
-/* ======= formula section ================ */
-/* ======================================== */
 
-double CalcDistance(double x1, double y1, double x2, double y2) {
-    // returns distance between two vectors
-    return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+std::vector<double> X_obj;
+std::vector<double> Y_obj;
+double x_0 = -77.9;
+double y_0 = -17.59;
+int count = 0;
+double Steering_X = 0.0;
+double Throttle_X;
+
+
+void maju() {
+    gear("forward");
+    steering(Steering_X);
+    Throttle_X=0.52;
+    Brake_0=0.0;
 }
 
-double CalcDistance_notsqrt(double x1, double y1, double x2, double y2) {
-    // returns distance between two vectors (without sqrt function)
-    double p = x1 - x2, q = y1 - y2;
-    return p * p + q * q;
+void mundur() {
+    gear("reverse");
+    steering(-1*Steering_X);
+    Throttle_X=0.45;
+    Brake_0=0.0;
+}
+void rem(){
+	Steering_X=0.0;
+	Throttle_X=0.0;	
+	brake(1.0);
 }
 
-double CalcAngle(double x, double y) {
-    // returns angle from vector (x,y) relative to Totalbu x (0 <= angle <= 2*pi)
-    double res = std::acos((-x) / sqrt(x * x + y * y));
-    
-    if (y < 0) {
-        res *= -1;
-    }
-    if (res < 0) {
-        res += 2 * PI;
-    }
-    return res;
-}
-/* ======================================== */
-
-#ifdef LOCAL_COMMENTING
-/* ======================================== */
-/* ======= comment section ================ */
-/* ======================================== */
-#include <iostream>
-#include <chrono>
-#include <iomanip>
-
-struct Point {
-    double x;
-    double y;
-};
-Point checkpoints[12] = {
-    Point{0, 0},
-    Point{-135, 1.50}, 
-    Point{-212.00, -73.95},
-    Point{-212.00, -198.22}, 
-    Point{-135.50, -256.00}, 
-    Point{-84.5, -198.22}, 
-    Point{-135.50, -128.00}, 
-    Point{-135.50, -48.20}, 
-    Point{44.50, -65.75}, 
-    Point{0.0, -128.00}, 
-    Point{44.50, -198.22}, 
-    Point{0.0, -256.00}
-};
-bool isVisited[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-int Goal = 0;
-void checkGoal(double x, double y) {
-    int i = 0;
-    for (Point checkpoint : checkpoints) {
-        double dist = CalcDistance(checkpoint.x, checkpoint.y, x, y);
-        if (dist <= 3.0) {
-            std::cout<<"!!! now at ("<<x<<", "<<y<<") with distance "<<dist<<" from ckpt ("<<checkpoint.x<<", "<<checkpoint.y<<std::endl;
-            if (!isVisited[i]) {
-                Goal++;
-                isVisited[i] = 1;
-            }
-        }
-        i++;
+void setCommand() {
+    switch(count) {
+        case 1:
+        case 7:
+        rem();
+        break;
+        
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        mundur();
+        break;
+        
+        default:
+            maju();
+            break;
     }
 }
-
-double TotalDistance = 0.0;
-bool isInitialized = false;
-double Energy = 0.0;
-int localTargetCnt = -1;
-auto Start = std::chrono::system_clock::now();
-
-void commentSection() {
-    std::cout << std::fixed;
-    std::cout << std::setprecision(2);
-    auto now = std::chrono::system_clock::now();
-    double duration = (std::chrono::duration_cast<std::chrono::milliseconds>(now - Start)).count() / 1000.0;
-    if (coordQueue.empty()) {
-        std::cout<<"Finish, jarak: "<<TotalDistance<<", time: "<<duration<<", energy: "<<(Energy / 100000)<<", ckpt: "<<Goal<<std::endl;
-        return;
-    }
-    if (localTargetCnt != cntTarget) {
-        localTargetCnt = cntTarget;
-        std::cout<<"target: "<<cntTarget<<", distance: "<<TotalDistance<<", waktu: "<<duration<<", energi: "<<(Energy / 100000)<<", ckpt: "<<Goal<<std::endl;
-    }
-}
-
-const double mass = 2176.46; // mass of the vehicle [kg]
-const double g = 9.81; // gravity constant [m/s^2]
-const double friction = 0.01; // rolling friction
-const double rho = 1.2; // for air at NTP [kg/m^3]
-const double drag_coeff = 0.357; // drag coefficient
-const double area = 3.389; // front area of vehicle [m^2] 
-double priorVelocity = 0.0;
-double lastSampledX = 0.0;
-double lastSampledY = 0.0;
-auto lastTime = std::chrono::system_clock::now();
-
-void calculateEnergy(const nav_msgs::Odometry::ConstPtr& msg, double newX, double newY) {
-    auto now = std::chrono::system_clock::now();
-    double dt = (std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTime)).count() / 1000.0;
-    if (dt < 1.0) return;
-    lastTime = now;
-    
-    double distance = CalcDistance(lastSampledX, lastSampledY, newX, newY);
-    double velocity = distance / dt;
-    double acceleration = (velocity - priorVelocity) / dt;
-    priorVelocity = velocity;
-    lastSampledX = newX;
-    lastSampledY = newY;
-    
-    // calculate forces acting against the moving vehicle
-    double force = (mass * g * friction) + (0.5 * rho * drag_coeff * area * (velocity * velocity)) + (mass * acceleration);
-    
-    // calculate Energy used
-    double EnergyUsage = force * distance;
-    
-    Energy += EnergyUsage;
-}
-/* ======================================== */
-#endif
 
 void initTarget() {
-    // menyimpan target
-    
-    // belok kiri segitiga
-    targetList.push(coordQueue{-93, -13, FORWARD});
-    targetList.push(coordQueue{-100, -18, FORWARD});
-    targetList.push(coordQueue{-129, -45.5, FORWARD});
-    targetList.push(coordQueue{-143, -55, FORWARD});
-    targetList.push(coordQueue{-145.75, -75.7, FORWARD});
 
-    // BACKWARD, belok kiri
-    targetList.push(coordQueue{-145.47, -7.79, BACKWARD});
-    targetList.push(coordQueue{-145.47, -0.9, BACKWARD});
-    targetList.push(coordQueue{-145.47, -0.9, BACKWARD});
-    targetList.push(coordQueue{-104.58, -0.5, BACKWARD});
-    targetList.push(coordQueue{-52.68, -0.91, BACKWARD});
+    //lurus ckpt1
+    X_obj.push_back(-77.86); Y_obj.push_back(16.80);//0 77.86
+  
+	// mundur
+	X_obj.push_back(-77.8); Y_obj.push_back(11.7);//1
+	X_obj.push_back(-77.5); Y_obj.push_back(7.7);//2
+	X_obj.push_back(-75.3); Y_obj.push_back(-1.8);//3
+	X_obj.push_back(-70.8); Y_obj.push_back(-0.6);//4
+	X_obj.push_back(-65.9); Y_obj.push_back(-0.5);// 5 titik terakhir
+	X_obj.push_back(-49.68); Y_obj.push_back(-0.91);// 6
+    
+    // balik maju
+    X_obj.push_back(-52.68); Y_obj.push_back(-0.91);//7ckpt
+    X_obj.push_back(-61.9); Y_obj.push_back(-0.7);//8
+    X_obj.push_back(-64.4); Y_obj.push_back(-0.6);//9
+    X_obj.push_back(-98.1); Y_obj.push_back(-0.4);//10
+    X_obj.push_back(-138.2); Y_obj.push_back(-0.3);//11
+    
+    //belok kiri PATAH
+    X_obj.push_back(-139.1); Y_obj.push_back(0.1);//12
+    X_obj.push_back(-142.0); Y_obj.push_back(-1.2);//13
+    X_obj.push_back(-143.8); Y_obj.push_back(-4.5);//14
+    X_obj.push_back(-144.4); Y_obj.push_back(-7.0);//15
+    X_obj.push_back(-144.4); Y_obj.push_back(-10.1);//16
 
-    // FORWARD lawan arah, belok kanan, lurus
-    targetList.push(coordQueue{-77.86, -0.91, FORWARD});
-    targetList.push(coordQueue{-77.86, 20, FORWARD});
     
-    // FORWARD, belok kanan
-    targetList.push(coordQueue{-77.86, 145, FORWARD});
-    targetList.push(coordQueue{-77, 171, FORWARD});
-    targetList.push(coordQueue{-75.1, 181.2, FORWARD});
-    targetList.push(coordQueue{-64, 193, FORWARD});
-    targetList.push(coordQueue{-53.3, 194.16, FORWARD});
-    targetList.push(coordQueue{-15.45, 194.16, FORWARD});
-    
-    //belok kanan lurus
-    targetList.push(coordQueue{-6.1, 191.5, FORWARD});
-    targetList.push(coordQueue{-2.6, 185.2, FORWARD});
-    targetList.push(coordQueue{-3.3, 177.4, FORWARD});
-    targetList.push(coordQueue{-3.7, 151.0, FORWARD});
-    targetList.push(coordQueue{-4.32, 110.51, FORWARD});
-    targetList.push(coordQueue{-6.7, 34.8, FORWARD});
-    
-    //bunderan
-    targetList.push(coordQueue{-9.8, 23.9, FORWARD});
-    targetList.push(coordQueue{-18.4, 8.9, FORWARD});
-    targetList.push(coordQueue{-21.7, -1.2, FORWARD});
-    targetList.push(coordQueue{-19.2, -10.4, FORWARD});
-    targetList.push(coordQueue{-12.9, -17.6, FORWARD});
-    targetList.push(coordQueue{-2.3, -22.1, FORWARD});
-    targetList.push(coordQueue{9.3, -19.4, FORWARD});
-    targetList.push(coordQueue{19.3, -10.0, FORWARD});
-    targetList.push(coordQueue{24.6, -7.3, FORWARD});
-    
-    //lurus, belok kanan
-    targetList.push(coordQueue{30.5, -7.1, FORWARD});
-    targetList.push(coordQueue{220.1, -9.7, FORWARD});
-    targetList.push(coordQueue{226.4, -13.1, FORWARD});
-    targetList.push(coordQueue{230.8, -19.1, FORWARD});
-    targetList.push(coordQueue{231.1, -24.9, FORWARD});
-    
-    //belok kanan, lurus
-    targetList.push(coordQueue{230.7, -45.8, FORWARD});
-    targetList.push(coordQueue{226.9, -52.8, FORWARD});
-    targetList.push(coordQueue{220.7, -57.3, FORWARD});
-    targetList.push(coordQueue{213.8, -58.1, FORWARD});
+    //lurus 
+    X_obj.push_back(-145.5); Y_obj.push_back(-47.9);//17
+    X_obj.push_back(-145.5); Y_obj.push_back(-101.5);//18
+    X_obj.push_back(-145.5); Y_obj.push_back(-108.6);//19
     
     //belok kiri
-    targetList.push(coordQueue{180.9, -58.3, FORWARD});
-    targetList.push(coordQueue{170.1, -65.0, FORWARD});
-    targetList.push(coordQueue{167.2, -73.6, FORWARD});
-    targetList.push(coordQueue{167.1, -87.5, FORWARD});
+    X_obj.push_back(-144.6); Y_obj.push_back(-114.0);//20
+    X_obj.push_back(-143.1); Y_obj.push_back(-118.8);//21
+    X_obj.push_back(-139.5); Y_obj.push_back(-124.7);//22
+    X_obj.push_back(-134.9); Y_obj.push_back(-129.8);//23
+    X_obj.push_back(-130.0); Y_obj.push_back(-131.6);//24
+    X_obj.push_back(-125.4); Y_obj.push_back(-132.8);//25
+    X_obj.push_back(-120.9); Y_obj.push_back(-133.1);//26
     
-    //belok kanan panjang
-    targetList.push(coordQueue{166.5, -96.9, FORWARD});
-    targetList.push(coordQueue{164.1, -105.4, FORWARD});
-    targetList.push(coordQueue{158.4, -115.1, FORWARD});
-    targetList.push(coordQueue{154.0, -120.2, FORWARD});
-    targetList.push(coordQueue{146.8, -125.1, FORWARD});
-    targetList.push(coordQueue{139.7, -127.8, FORWARD});
-    targetList.push(coordQueue{133.2, -128.8, FORWARD});
+    //lurus sblm belok
+    X_obj.push_back(-85.3); Y_obj.push_back(-132.4);//27
     
-    //lurus, belok kiri
-    targetList.push(coordQueue{5.2, -130.7, FORWARD});
-    targetList.push(coordQueue{-5.5, -135.1, FORWARD});
-    targetList.push(coordQueue{-8.6, -141.6, FORWARD});
+    //belok kanan dan kiri
+    X_obj.push_back(-77.2); Y_obj.push_back(-136.5);//28
     
-    //lurus, belok kanan, lurus
-    targetList.push(coordQueue{-8.9, -147.5, FORWARD});
-    targetList.push(coordQueue{-8.8, -188.6, FORWARD});
-    targetList.push(coordQueue{-9.2, -193.1, FORWARD});
-    targetList.push(coordQueue{-13.3, -196.0, FORWARD});
-    targetList.push(coordQueue{-19.2, -196.9, FORWARD});
-    targetList.push(coordQueue{-38.7, -196.9, FORWARD});
-    targetList.push(coordQueue{-50.6, -193.6, FORWARD});
+    X_obj.push_back(-76.2); Y_obj.push_back(-143.3);//29
+    X_obj.push_back(-75.0); Y_obj.push_back(-148.2);//30
+    X_obj.push_back(-74.7); Y_obj.push_back(-160.9);//31
+    
+    X_obj.push_back(-72.6); Y_obj.push_back(-169.5);//32
+    X_obj.push_back(-69.8); Y_obj.push_back(-176.1);//33
+    X_obj.push_back(-65.8); Y_obj.push_back(-182.0);
+    X_obj.push_back(-60.5); Y_obj.push_back(-187.2);
+    X_obj.push_back(-54.9); Y_obj.push_back(-190.6);
+    X_obj.push_back(-48.9); Y_obj.push_back(-192.8);
+    
+    //lurus
+    X_obj.push_back(-41.6); Y_obj.push_back(-193.6);
+    X_obj.push_back(-13.6); Y_obj.push_back(-193.9);
+    
+    //belok kiri POMBENSIN (NO NOTIF)
+    X_obj.push_back(-10.1); Y_obj.push_back(-192.2);
+    X_obj.push_back(-9.4); Y_obj.push_back(-189.4);
+    X_obj.push_back(-9.4); Y_obj.push_back(-185.9);
+    
+    //lurus MASIH CACAT (NO NOTIF)
+    X_obj.push_back(-9.4); Y_obj.push_back(-141.0);
+    //kanan
+    X_obj.push_back(-7.0); Y_obj.push_back(-134.8);
+    X_obj.push_back(-0.5); Y_obj.push_back(-132.6);
+    X_obj.push_back(10.1); Y_obj.push_back(-131.1);
+    //lurus
+    X_obj.push_back(16.5); Y_obj.push_back(-130.7);
+    X_obj.push_back(131.5); Y_obj.push_back(-129.3);
+    
+    //kiri
+    X_obj.push_back(138.8); Y_obj.push_back(-128.0);
+    X_obj.push_back(142.6); Y_obj.push_back(-126.9);
+    X_obj.push_back(146.4); Y_obj.push_back(-125.2);
+    X_obj.push_back(151.0); Y_obj.push_back(-122.5);
+    X_obj.push_back(155.3); Y_obj.push_back(-119.0);
+    X_obj.push_back(159.4); Y_obj.push_back(-114.5);
+    X_obj.push_back(162.1); Y_obj.push_back(-110.6);
+    X_obj.push_back(164.4); Y_obj.push_back(-105.6);
+    X_obj.push_back(166.2); Y_obj.push_back(-99.9);
+    X_obj.push_back(166.9); Y_obj.push_back(-95.1);
+    X_obj.push_back(167.1); Y_obj.push_back(-89.5);
+    
+    
+    //lurus
+    X_obj.push_back(167.4); Y_obj.push_back(-70.9);
+    
+    //kanan
+    X_obj.push_back(172.8); Y_obj.push_back(-61.8);
+    X_obj.push_back(179.0); Y_obj.push_back(-59.4);
+    X_obj.push_back(184.6); Y_obj.push_back(-58.9);
+    
+    //lurus
+    X_obj.push_back(220.6); Y_obj.push_back(-58.5);
+    
+    //kiri 
+    X_obj.push_back(226.7); Y_obj.push_back(-55.3);
+    X_obj.push_back(229.0); Y_obj.push_back(-50.2);
+    X_obj.push_back(230.4); Y_obj.push_back(-43.2);
+    
+    //lurus
+    X_obj.push_back(231.2); Y_obj.push_back(-20.0);
+    
+    //kiri
+    X_obj.push_back(228.8); Y_obj.push_back(-14.7);
+    X_obj.push_back(224.4); Y_obj.push_back(-11.9);
+    X_obj.push_back(220.2); Y_obj.push_back(-10.5);
+    X_obj.push_back(216.3); Y_obj.push_back(-10.1);
+    
+    
+    //lurus
+    X_obj.push_back(203.9); Y_obj.push_back(-9.4);
+    X_obj.push_back(181.8); Y_obj.push_back(-9.2);
+    X_obj.push_back(139.8); Y_obj.push_back(-8.6);
+    X_obj.push_back(28.7); Y_obj.push_back(-7.0);
+    
+    //bunderan baru
+    X_obj.push_back(23.5); Y_obj.push_back(-8.9);
+    X_obj.push_back(20.3); Y_obj.push_back(-12.7);
+    X_obj.push_back(15.0); Y_obj.push_back(-18.3);
+    X_obj.push_back(9.6); Y_obj.push_back(-21.4);
+    X_obj.push_back(1.8); Y_obj.push_back(-23.6);
+    X_obj.push_back(-6.5); Y_obj.push_back(-22.9);
+    X_obj.push_back(-13.5); Y_obj.push_back(-19.7);
+    X_obj.push_back(-19.3); Y_obj.push_back(-13.9);
+    X_obj.push_back(-22.5); Y_obj.push_back(-8.0);
+    X_obj.push_back(-23.8); Y_obj.push_back(-0.9);
+    X_obj.push_back(-22.8); Y_obj.push_back(6.6);
+    X_obj.push_back(-19.9); Y_obj.push_back(12.3);
+    // bunderan keluar
+    X_obj.push_back(-15.9); Y_obj.push_back(16.6);
+    X_obj.push_back(-11.3); Y_obj.push_back(22.0);
+    X_obj.push_back(-8.5); Y_obj.push_back(27.0);
+    X_obj.push_back(-7.7); Y_obj.push_back(30.4);
+    X_obj.push_back(-6.9); Y_obj.push_back(35.2);
+    X_obj.push_back(-6.3); Y_obj.push_back(41.8);
+    
+	//lurus
+	X_obj.push_back(-6.3); Y_obj.push_back(45.6); 
+	X_obj.push_back(-4.5); Y_obj.push_back(124.7);
+	X_obj.push_back(-3.7); Y_obj.push_back(148.8);
+	X_obj.push_back(-2.7); Y_obj.push_back(184.5);
+	X_obj.push_back(-4.4); Y_obj.push_back(190.0); 
+	
+	//belok kiri 
+	X_obj.push_back(-8.2); Y_obj.push_back(192.1);
+	X_obj.push_back(-12.4); Y_obj.push_back(193.2);
+	X_obj.push_back(-16.1); Y_obj.push_back(194.0);  
+	
+	//lurus  
+    X_obj.push_back(-15.45); Y_obj.push_back(194.0);
+    X_obj.push_back(-40.45); Y_obj.push_back(194.2);
+
 }
 
 
-void movetoNewCoords(const nav_msgs::Odometry::ConstPtr& msg) {
-    double coordsX = msg->pose.pose.position.x;
-    double coordsY = msg->pose.pose.position.y;
+double formula_teta(double x, double y) {
+	
+    double teta = std::atan2(y,x);
+    
+    teta *= -1;
+    if (teta < 0) {
+        teta += 6.283185307179586; // pi/2
+    }
+    return teta;
+}
 
-    if (coordsX == lastX && coordsY == lastY) {
-        // kalau belum berubah posisi, tidak perlu melakukan apa-apa
+void speedometerCallback (const std_msgs::Float32::ConstPtr& msg) {
+    if (msg->data >= 30/3.6) {
+        Throttle_X = 0.465;
+    }
+    throttle(Throttle_X);
+    
+    if (abs(msg->data)<0.0005){
+		brake(0.0);
+		
+}
+}
+
+void odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
+    double x_1 = msg->pose.pose.position.x;
+    double y_1 = msg->pose.pose.position.y;
+    
+    if (x_1 == x_0 && y_1 == y_0) {
         return;
     }
-    if (targetList.empty()) {
-        // update value global vars
-        lastX = coordsX;
-        lastY = coordsY;
-        return;
-    }
-
-    ROS_INFO("newX = %f & newY = %f", coordsX, coordsY);
-
-    coordQueue target = targetList.front(); //Find most upper queue
-    double distance = CalcDistance_notsqrt(target.x, target.y, coordsX, coordsY);
-
-    if(distance < 20) { //safe distance for the confirmed checkpoint
-        targetList.pop();
-    }
-
-    if (targetList.empty()){
-        set_throttle(0.0);
-        set_brake(1.0);
-        set_handbrake(true);
-    }
-
-    switch(target.fwrd_bwrd) {
-        case FORWARD:
-            set_gear("forward");
-            steerMult = 1.0;
-            break;
-        case BACKWARD:
-            set_gear("reverse");
-            steerMult = -1.0;
-            break;
-            
-    angle = CalcAngle(target.x - coordsX, target.y - coordsY); - CalcAngle(coordsX - lastX, coordsY - lastY);
     
-    // konversi 0 <= angle <= 2*PI ke -PI < angle <= PI
-    // berguna untuk mencari steeringValue
-    if (angle > PI) { 
-        angle -= PI_MULT_2;
-    }
-    else if (angle <= -1 * PI) {
-        angle += PI_MULT_2;
-    }
-            
-    steerVal = angle / (PI_DIV_2);
-    if (steerVal < -0.65) {
-        steerVal = -1.0;
-    }
-    else if (steerVal > 0.65) {
-        steerVal = 1.0;
-    }
-    set_steering(steerVal * steerMult);  
-      
-    // update value global vars
-    lastX = coordsX;
-    lastY = coordsY;
+	double jarak = sqrt((X_obj[count] - x_1) * (X_obj[count] - x_1) + (Y_obj[count] - y_1) * (Y_obj[count] - y_1));
+    if (jarak <= 6.25) {
+        count++;
     }
 
-
+//x    
+    double deltaX1 = x_1 - x_0;
+    double deltaX2 = X_obj[count] - x_1;
+//y    
+    double deltaY1 = y_1 - y_0;
+    double deltaY2 = Y_obj[count] - y_1;
     
-}
-void speedometerCallback(const std_msgs::Float32::ConstPtr& msg) {
-    if (msg->data >= 10) {
-        targetThrottle = 0.3;
-    } else {
-        targetThrottle = 0.6;
-    }
-    set_throttle(targetThrottle);
+//sudut    
+    double alpha_1 = formula_teta(deltaX1, deltaY1);
+    double alpha_2 = formula_teta(deltaX2, deltaY2);
+    double beta = alpha_2 - alpha_1;
+    
+   
+    x_0 = x_1;
+    y_0 = y_1;
+    
 
-    ROS_INFO("speed = %f", msg->data);
+    if (beta > 3.14159265358979323846) { 
+        beta -= 6.283185307179586; // 2pi
+    }
+    if (beta <= -3.14159265358979323846) {
+        beta += 6.283185307179586; // 2pi
+    }
+    
+    Steering_X = beta / 1.5707963267948966; // pi/2
+    if (Steering_X < -1.0) {
+        Steering_X = -1.0;
+    }
+    if (Steering_X > 1.0) {
+        Steering_X = 1.0;
+    }
+    
+
+    setCommand();
 }
 
+void lane_invasionCallback (const carla_msgs::CarlaLaneInvasionEvent::ConstPtr& msg) {
+    for (auto x : msg->crossed_lane_markings) {
+        std::cout<<x<<std::endl;
+        std::cout<<" Fail: "<<"("<<x_0<<", "<<y_0<<")"<<std::endl;
+        }
+}
 
 int main(int argc, char **argv) {
-    //Initialize the ros
     ros::init(argc, argv, "shell_simulation_node");
-
-    //Creating Ros handle
-    ros::NodeHandle n;
-
-    //Publishe to certain topic
-    brake_Pub = n.advertise<std_msgs::Float64>("brake_command", 8);
-    throttle_Pub = n.advertise<std_msgs::Float64>("throttle_command", 8);
-    steering_Pub = n.advertise<std_msgs::Float64>("steering_command", 8);
-    gear_Pub = n.advertise<std_msgs::String>("gear_command", 8);
-    handbrake_Pub = n.advertise<std_msgs::Bool>("handbrake_command", 8);
-    
+    ros::NodeHandle nh;
+    throttlePublisher = nh.advertise<std_msgs::Float64>("throttle_command", 1);
+    brakePublisher = nh.advertise<std_msgs::Float64>("brake_command", 1);
+    gearPublisher = nh.advertise<std_msgs::String>("gear_command", 1);
+    steeringPublisher = nh.advertise<std_msgs::Float64>("steering_command", 1);
     initTarget();
-    //Subscribe to certain topic
-    ros::Duration(1.0).sleep(); 
-    odometry_Sub = n.subscribe("carla/ego_vehicle/odometry", 8, movetoNewCoords);
-    speedometer_Sub = n.subscribe("carla/ego_vehicle/speedometer", 8, speedometerCallback);
-    ros::Rate rate(10);
+    ros::Duration(1.0).sleep();
+    odomSubscriber = nh.subscribe("carla/ego_vehicle/odometry", 1, odomCallback);
+    speedometerSubscriber = nh.subscribe("carla/ego_vehicle/speedometer", 1 , speedometerCallback);
+    lane_invasionSubscriber = nh.subscribe("carla/ego_vehicle/lane_invasion", 1, lane_invasionCallback);
     ros::spin();
-    return 0;
 }
-
-// //misal ini adalah sebuah program
-
-
-
-// git config --global http.proxy http://152.118.148.7:3128
