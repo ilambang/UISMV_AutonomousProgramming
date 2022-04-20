@@ -254,29 +254,6 @@ void calculateEnergy(const nav_msgs::Odometry::ConstPtr& msg, double newX, doubl
 /* ======================================== */
 #endif
 
-double CalcDistance(double x1, double y1, double x2, double y2) {
-    return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
-}
-
-double CalcDistance_notsqrt(double x1, double y1, double x2, double y2) {
-    double p = x1 - x2, q = y1 - y2;
-    return p * p + q * q;
-}
-
-double CalcAngle(double x, double y) {
-    // mengembalikan sudut dari vektor (x, y) relatif terhadap Totalbu x (0 <= sudut <= 2 * pi)
-    
-    double res = std::acos((-x) / sqrt(x * x + y * y));
-    
-    if (y < 0) {
-        res *= -1;
-    }
-    if (res < 0) {
-        res += 2 * PI;
-    }
-    return res;
-}
-
 void initTarget() {
     // menyimpan target
     
