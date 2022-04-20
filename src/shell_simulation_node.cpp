@@ -258,91 +258,91 @@ void initTarget() {
     // menyimpan target
     
     // belok kiri segitiga
-    coordQueue.push(Target{-93, -13, FORWARD});
-    coordQueue.push(Target{-100, -18, FORWARD});
-    coordQueue.push(Target{-129, -45.5, FORWARD});
-    coordQueue.push(Target{-143, -55, FORWARD});
-    coordQueue.push(Target{-145.75, -75.7, FORWARD});
+    targetList.push(coordQueue{-93, -13, FORWARD});
+    targetList.push(coordQueue{-100, -18, FORWARD});
+    targetList.push(coordQueue{-129, -45.5, FORWARD});
+    targetList.push(coordQueue{-143, -55, FORWARD});
+    targetList.push(coordQueue{-145.75, -75.7, FORWARD});
 
     // BACKWARD, belok kiri
-    coordQueue.push(Target{-145.47, -7.79, BACKWARD});
-    coordQueue.push(Target{-145.47, -0.9, BACKWARD});
-    coordQueue.push(Target{-145.47, -0.9, BACKWARD});
-    coordQueue.push(Target{-104.58, -0.5, BACKWARD});
-    coordQueue.push(Target{-52.68, -0.91, BACKWARD});
+    targetList.push(coordQueue{-145.47, -7.79, BACKWARD});
+    targetList.push(coordQueue{-145.47, -0.9, BACKWARD});
+    targetList.push(coordQueue{-145.47, -0.9, BACKWARD});
+    targetList.push(coordQueue{-104.58, -0.5, BACKWARD});
+    targetList.push(coordQueue{-52.68, -0.91, BACKWARD});
 
     // FORWARD lawan arah, belok kanan, lurus
-    coordQueue.push(Target{-77.86, -0.91, FORWARD});
-    coordQueue.push(Target{-77.86, 20, FORWARD});
+    targetList.push(coordQueue{-77.86, -0.91, FORWARD});
+    targetList.push(coordQueue{-77.86, 20, FORWARD});
     
     // FORWARD, belok kanan
-    coordQueue.push(Target{-77.86, 145, FORWARD});
-    coordQueue.push(Target{-77, 171, FORWARD});
-    coordQueue.push(Target{-75.1, 181.2, FORWARD});
-    coordQueue.push(Target{-64, 193, FORWARD});
-    coordQueue.push(Target{-53.3, 194.16, FORWARD});
-    coordQueue.push(Target{-15.45, 194.16, FORWARD});
+    targetList.push(coordQueue{-77.86, 145, FORWARD});
+    targetList.push(coordQueue{-77, 171, FORWARD});
+    targetList.push(coordQueue{-75.1, 181.2, FORWARD});
+    targetList.push(coordQueue{-64, 193, FORWARD});
+    targetList.push(coordQueue{-53.3, 194.16, FORWARD});
+    targetList.push(coordQueue{-15.45, 194.16, FORWARD});
     
     //belok kanan lurus
-    coordQueue.push(Target{-6.1, 191.5, FORWARD});
-    coordQueue.push(Target{-2.6, 185.2, FORWARD});
-    coordQueue.push(Target{-3.3, 177.4, FORWARD});
-    coordQueue.push(Target{-3.7, 151.0, FORWARD});
-    coordQueue.push(Target{-4.32, 110.51, FORWARD});
-    coordQueue.push(Target{-6.7, 34.8, FORWARD});
+    targetList.push(coordQueue{-6.1, 191.5, FORWARD});
+    targetList.push(coordQueue{-2.6, 185.2, FORWARD});
+    targetList.push(coordQueue{-3.3, 177.4, FORWARD});
+    targetList.push(coordQueue{-3.7, 151.0, FORWARD});
+    targetList.push(coordQueue{-4.32, 110.51, FORWARD});
+    targetList.push(coordQueue{-6.7, 34.8, FORWARD});
     
     //bunderan
-    coordQueue.push(Target{-9.8, 23.9, FORWARD});
-    coordQueue.push(Target{-18.4, 8.9, FORWARD});
-    coordQueue.push(Target{-21.7, -1.2, FORWARD});
-    coordQueue.push(Target{-19.2, -10.4, FORWARD});
-    coordQueue.push(Target{-12.9, -17.6, FORWARD});
-    coordQueue.push(Target{-2.3, -22.1, FORWARD});
-    coordQueue.push(Target{9.3, -19.4, FORWARD});
-    coordQueue.push(Target{19.3, -10.0, FORWARD});
-    coordQueue.push(Target{24.6, -7.3, FORWARD});
+    targetList.push(coordQueue{-9.8, 23.9, FORWARD});
+    targetList.push(coordQueue{-18.4, 8.9, FORWARD});
+    targetList.push(coordQueue{-21.7, -1.2, FORWARD});
+    targetList.push(coordQueue{-19.2, -10.4, FORWARD});
+    targetList.push(coordQueue{-12.9, -17.6, FORWARD});
+    targetList.push(coordQueue{-2.3, -22.1, FORWARD});
+    targetList.push(coordQueue{9.3, -19.4, FORWARD});
+    targetList.push(coordQueue{19.3, -10.0, FORWARD});
+    targetList.push(coordQueue{24.6, -7.3, FORWARD});
     
     //lurus, belok kanan
-    coordQueue.push(Target{30.5, -7.1, FORWARD});
-    coordQueue.push(Target{220.1, -9.7, FORWARD});
-    coordQueue.push(Target{226.4, -13.1, FORWARD});
-    coordQueue.push(Target{230.8, -19.1, FORWARD});
-    coordQueue.push(Target{231.1, -24.9, FORWARD});
+    targetList.push(coordQueue{30.5, -7.1, FORWARD});
+    targetList.push(coordQueue{220.1, -9.7, FORWARD});
+    targetList.push(coordQueue{226.4, -13.1, FORWARD});
+    targetList.push(coordQueue{230.8, -19.1, FORWARD});
+    targetList.push(coordQueue{231.1, -24.9, FORWARD});
     
     //belok kanan, lurus
-    coordQueue.push(Target{230.7, -45.8, FORWARD});
-    coordQueue.push(Target{226.9, -52.8, FORWARD});
-    coordQueue.push(Target{220.7, -57.3, FORWARD});
-    coordQueue.push(Target{213.8, -58.1, FORWARD});
+    targetList.push(coordQueue{230.7, -45.8, FORWARD});
+    targetList.push(coordQueue{226.9, -52.8, FORWARD});
+    targetList.push(coordQueue{220.7, -57.3, FORWARD});
+    targetList.push(coordQueue{213.8, -58.1, FORWARD});
     
     //belok kiri
-    coordQueue.push(Target{180.9, -58.3, FORWARD});
-    coordQueue.push(Target{170.1, -65.0, FORWARD});
-    coordQueue.push(Target{167.2, -73.6, FORWARD});
-    coordQueue.push(Target{167.1, -87.5, FORWARD});
+    targetList.push(coordQueue{180.9, -58.3, FORWARD});
+    targetList.push(coordQueue{170.1, -65.0, FORWARD});
+    targetList.push(coordQueue{167.2, -73.6, FORWARD});
+    targetList.push(coordQueue{167.1, -87.5, FORWARD});
     
     //belok kanan panjang
-    coordQueue.push(Target{166.5, -96.9, FORWARD});
-    coordQueue.push(Target{164.1, -105.4, FORWARD});
-    coordQueue.push(Target{158.4, -115.1, FORWARD});
-    coordQueue.push(Target{154.0, -120.2, FORWARD});
-    coordQueue.push(Target{146.8, -125.1, FORWARD});
-    coordQueue.push(Target{139.7, -127.8, FORWARD});
-    coordQueue.push(Target{133.2, -128.8, FORWARD});
+    targetList.push(coordQueue{166.5, -96.9, FORWARD});
+    targetList.push(coordQueue{164.1, -105.4, FORWARD});
+    targetList.push(coordQueue{158.4, -115.1, FORWARD});
+    targetList.push(coordQueue{154.0, -120.2, FORWARD});
+    targetList.push(coordQueue{146.8, -125.1, FORWARD});
+    targetList.push(coordQueue{139.7, -127.8, FORWARD});
+    targetList.push(coordQueue{133.2, -128.8, FORWARD});
     
     //lurus, belok kiri
-    coordQueue.push(Target{5.2, -130.7, FORWARD});
-    coordQueue.push(Target{-5.5, -135.1, FORWARD});
-    coordQueue.push(Target{-8.6, -141.6, FORWARD});
+    targetList.push(coordQueue{5.2, -130.7, FORWARD});
+    targetList.push(coordQueue{-5.5, -135.1, FORWARD});
+    targetList.push(coordQueue{-8.6, -141.6, FORWARD});
     
     //lurus, belok kanan, lurus
-    coordQueue.push(Target{-8.9, -147.5, FORWARD});
-    coordQueue.push(Target{-8.8, -188.6, FORWARD});
-    coordQueue.push(Target{-9.2, -193.1, FORWARD});
-    coordQueue.push(Target{-13.3, -196.0, FORWARD});
-    coordQueue.push(Target{-19.2, -196.9, FORWARD});
-    coordQueue.push(Target{-38.7, -196.9, FORWARD});
-    coordQueue.push(Target{-50.6, -193.6, FORWARD});
+    targetList.push(coordQueue{-8.9, -147.5, FORWARD});
+    targetList.push(coordQueue{-8.8, -188.6, FORWARD});
+    targetList.push(coordQueue{-9.2, -193.1, FORWARD});
+    targetList.push(coordQueue{-13.3, -196.0, FORWARD});
+    targetList.push(coordQueue{-19.2, -196.9, FORWARD});
+    targetList.push(coordQueue{-38.7, -196.9, FORWARD});
+    targetList.push(coordQueue{-50.6, -193.6, FORWARD});
 }
 
 
@@ -354,7 +354,7 @@ void movetoNewCoords(const nav_msgs::Odometry::ConstPtr& msg) {
         // kalau belum berubah posisi, tidak perlu melakukan apa-apa
         return;
     }
-    if (coordQueue.empty()) {
+    if (targetList.empty()) {
         // update value global vars
         lastX = coordsX;
         lastY = coordsY;
@@ -363,7 +363,7 @@ void movetoNewCoords(const nav_msgs::Odometry::ConstPtr& msg) {
 
     ROS_INFO("newX = %f & newY = %f", coordsX, coorsY);
 
-    coordQueue target = coordQueue.front(); //Find most upper queue
+    coordQueue target = targetList.front(); //Find most upper queue
     double distance = CalcDistance_notsqrt(target.x, target.y, newX, newY);
 
     if(distance < 20) { //safe distance for the confirmed checkpoint
