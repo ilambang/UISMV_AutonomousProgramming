@@ -391,10 +391,10 @@ void movetoNewCoords(const nav_msgs::Odometry::ConstPtr& msg) {
     // konversi 0 <= angle <= 2*PI ke -PI < angle <= PI
     // berguna untuk mencari steeringValue
     if (angle > PI) { 
-        angle -= PI_TIMES_2;
+        angle -= PI_MULT_2;
     }
     else if (angle <= -1 * PI) {
-        angle += PI_TIMES_2;
+        angle += PI_MULT_2;
     }
             
     steerVal = angle / (PI_DIV_2);
@@ -404,7 +404,7 @@ void movetoNewCoords(const nav_msgs::Odometry::ConstPtr& msg) {
     else if (steerVal > 0.65) {
         steerVal = 1.0;
     }
-    steering(steerVal * steerMult);  
+    set_steering(steerVal * steerMult);  
       
     // update value global vars
     lastX = coordsX;
@@ -420,9 +420,9 @@ void speedometerCallback(const std_msgs::Float32::ConstPtr& msg) {
     } else {
         targetThrottle = 0.6;
     }
-    throttle(targetThrottle);
+    set_throttle(targetThrottle);
 
-    ROS_INFO("speed = %f", speed);
+    ROS_INFO("speed = %f", msg->data);
 }
 
 
