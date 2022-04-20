@@ -1,204 +1,148 @@
-// /*Include ROS library and it's dependency*/
-// #include <ros/ros.h>
-// #include <stdlib.h>
-// #include <string>
-// #include <queue>
-// #include <cmath>
+/*
+    Shell Simulation
+    by Iman Herlambang Suherman, Adiro Pradaya Gahana, Ahmad Akbar Habibillah
+    Nakoela Team
 
-// /*Include standard format library*/
-// #include <std_msgs/Float64.h>
-// #include <std_msgs/Float32.h>
-// #include <std_msgs/String.h>
-// #include <std_msgs/Bool.h>
-// #include <nav_msgs/Odometry.h>
+*/
 
-// /*Create object for publishing data or publisher*/
-// ros::Publisher brake_Pub;
-// ros::Publisher throttle_Pub;
-// ros::Publisher steering_Pub;
-// ros::Publisher gear_Pub;
-// ros::Publisher handbrake_Pub;
-
-// /*Create object for subscribing sensor data*/
-// ros::Subscriber odometry_Sub;
-// ros::Subscriber speedometer_Sub;
-
-
-// double steering_value;
-// float lat,longitude,alt;
-
-// // void chatterCallback(const sensor_msgs::NavSatFix::ConstPtr& msg)
-// // {
-// //   ROS_INFO("I heard: [%s]", msg->data.c_str());
-// //   std::cout << msg->longitude << msg->latitude << msg->altitude << std::endl;
-// // }
-
-// void odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
-//     double newX = msg->pose.pose.position.x;
-//     double newY = msg->pose.pose.position.y;
-
-//     ROS_INFO("newX = %f & newY = %f", newX, newY);
-// }
-// void speedometerCallback(const std_msgs::Float32::ConstPtr& msg) {
-//     double speed = msg->data;
-
-//     ROS_INFO("speed = %f", speed);
-// }
-
-
-// int main(int argc, char **argv) {
-//     //Initialize the ros
-//     ros::init(argc, argv, "shell_simulation_node");
-
-//     //Creating Ros handle
-//     ros::NodeHandle n;
-
-//     //Publishe to certain topic
-//     brake_Pub = n.advertise<std_msgs::Float64>("brake_command", 8);
-//     throttle_Pub = n.advertise<std_msgs::Float64>("throttle_command", 8);
-//     steering_Pub = n.advertise<std_msgs::Float64>("steering_command", 8);
-//     gear_Pub = n.advertise<std_msgs::String>("gear_command", 8);
-//     handbrake_Pub = n.advertise<std_msgs::Bool>("handbrake_command", 8);
-    
-//     //Subscribe to certain topic
-//     odometry_Sub = n.subscribe("carla/ego_vehicle/odometry", 8, odomCallback);
-//     speedometer_Sub = n.subscribe("carla/ego_vehicle/speedometer", 8, speedometerCallback);
-//     ros::Rate rate(10);
-
-//     int count = 0;
-//     const int max_count = 100;
-
-//     std_msgs::Float64 msg;
-
-//     while (ros::ok() && count < max_count) {
-        
-//         msg.data = steering_value;
-//         steering_Pub.publish(msg);
-//         ros::spinOnce();
-//         ros::spinOnce();
-//         rate.sleep();
-//         count++;
-//         steering_value = ((double)count - 50.0)/50;
-//     }
-
-//     ros::spin();
-//     return 0;
-// }
-
-// //misal ini adalah sebuah program
-
+/*Include ROS library and it's dependency*/
 #include <ros/ros.h>
 #include <stdlib.h>
 #include <string>
 #include <queue>
 #include <cmath>
+
+/*Include standard format library*/
 #include <std_msgs/Float64.h>
 #include <std_msgs/Float32.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Bool.h>
 #include <nav_msgs/Odometry.h>
 
+/*Define Constants*/
 #define PI 3.14159265358979323846
-#define PI_TIMES_2 6.283185
+#define PI_MULT_2 6.283185
 #define PI_DIV_2 1.570796
-#define MAJU 0
-#define MUNDUR 1
-//#define LOCAL_COMMENTING true
+#define FORWARD 0
+#define BACKWARD 1
 
-ros::Publisher throttlePublisher;
-ros::Publisher brakePublisher;
-ros::Publisher gearPublisher;
-ros::Publisher handbrakePublisher;
-ros::Publisher steeringPublisher;
-ros::Subscriber odomSubscriber;
-ros::Subscriber speedometerSubscriber;
+/*Create object for publishing data or publisher*/
+ros::Publisher brake_Pub;
+ros::Publisher throttle_Pub;
+ros::Publisher steering_Pub;
+ros::Publisher gear_Pub;
+ros::Publisher handbrake_Pub;
 
-double lastThrottle = 0.0;
-double lastSteering = 0.0;
-bool lastHandbrake = 0.0;
-double lastBrake = 0.0;
-std::string lastGear = "forward";
+/*Create object for subscribing sensor data*/
+ros::Subscriber odometry_Sub;
+ros::Subscriber speedometer_Sub;
 
 /* ======================================== */
-/* ===== functional publisher section ===== */
+/* === global vars and data type section == */
 /* ======================================== */
-void throttle(double x) {
-    // 0.0 to 1.0
-    if (lastThrottle == x) {
+struct coordQueue {
+    double x;
+    double y;
+    int fwrd_bwrd;
+};
+std::queue<coordQueue> coordQueue;
+double lastX = -77.9;
+double lastY = -25;
+int cntTarget = 0;
+int needBrake = 0;
+double steerVal = 0.0;
+double steerMult = 1.0;
+double targetThrottle = 0.6;
+
+double last_throttle_value = 0.0;
+double last_steering_value = 0.0;
+bool last_handbrake_value = 0.0;
+double last_brake_value = 0.0;
+std::string last_gear_value = "forward";
+
+double angle;
+
+/* Publisher Functions  */
+
+
+void set_throttle(double x) {
+    // range: 0.0 to 1.0
+    if (last_throttle_value == x) {
         return;
     }
-    lastThrottle = x;
+
+    last_throttle_value = x;
     std_msgs::Float64 msg;
     msg.data = x;
-    throttlePublisher.publish(msg);
+    throttle_Pub.publish(msg);
     ros::spinOnce();
 }
 
-void brake(double x) {
-    // 0.0 to 1.0
-    if (lastBrake == x) {
+void set_brake(double x) {
+    // range: 0.0 to 1.0
+    if (last_brake_value == x) {
         return;
     }
-    lastBrake = x;
+    last_brake_value = x;
     std_msgs::Float64 msg;
     msg.data = x;
-    brakePublisher.publish(msg);
+    brake_Pub.publish(msg);
     ros::spinOnce();
 }
 
-void gear(std::string x) {
+void set_gear(std::string x) {
     // "forward" or "reverse"
-    if (lastGear == x) {
+    if (last_gear_value == x) {
         return;
     }
     std_msgs::String msg;
     msg.data = x;
-    lastGear = x;
-    gearPublisher.publish(msg);
+    last_gear_value = x;
+    gear_Pub.publish(msg);
     ros::spinOnce();
 }
 
-void handbrake(bool x) {
+void set_handbrake(bool x) {
     // true or false
-    if (lastHandbrake == x) {
+    if (last_handbrake_value == x) {
         return;
     }
-    lastHandbrake = x;
+    last_handbrake_value = x;
     std_msgs::Bool msg;
     msg.data = x;
-    handbrakePublisher.publish(msg);
+    handbrake_Pub.publish(msg);
     ros::spinOnce();
 }
 
-void steering(double x) {
+void set_steering(double x) {
     // -1.0 to 1.0
-    if (abs(lastSteering - x) < 0.0005) {
+    if (abs(last_steering_value - x) < 0.0005) {
         return;
     }
-    lastSteering = x;
+    last_steering_value = x;
     std_msgs::Float64 msg;
     msg.data = x;
-    steeringPublisher.publish(msg);
+    steering_Pub.publish(msg);
     ros::spinOnce();
 }
-/* ======================================== */
-
 
 /* ======================================== */
 /* ======= formula section ================ */
 /* ======================================== */
-double getDistance(double x1, double y1, double x2, double y2) {
+
+double CalcDistance(double x1, double y1, double x2, double y2) {
+    // returns distance between two vectors
     return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
 }
 
-double getDistance_notsqrt(double x1, double y1, double x2, double y2) {
+double CalcDistance_notsqrt(double x1, double y1, double x2, double y2) {
+    // returns distance between two vectors (without sqrt function)
     double p = x1 - x2, q = y1 - y2;
     return p * p + q * q;
 }
 
-double getAngle(double x, double y) {
-    // mengembalikan sudut dari vektor (x, y) relatif terhadap sumbu x (0 <= sudut <= 2 * pi)
-    
+double CalcAngle(double x, double y) {
+    // returns angle from vector (x,y) relative to Totalbu x (0 <= angle <= 2*pi)
     double res = std::acos((-x) / sqrt(x * x + y * y));
     
     if (y < 0) {
@@ -210,35 +154,6 @@ double getAngle(double x, double y) {
     return res;
 }
 /* ======================================== */
-
-
-/* ======================================== */
-/* === global vars and data type section == */
-/* ======================================== */
-struct Target {
-    double x;
-    double y;
-    int maju_mundur;
-};
-std::queue<Target> targetList;
-double lastX = -77.9;
-double lastY = -25;
-int cntTarget = 0;
-int needBrake = 0;
-double steerVal = 0.0;
-double steerMult = 1.0;
-double targetThrottle = 0.6;
-
-double vecX1;
-double vecY1;
-double vecX2;
-double vecY2;
-double angle1;
-double angle2;
-double angle;
-
-/* ======================================== */
-
 
 #ifdef LOCAL_COMMENTING
 /* ======================================== */
@@ -267,15 +182,15 @@ Point checkpoints[12] = {
     Point{0.0, -256.00}
 };
 bool isVisited[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-int cntGoal = 0;
+int Goal = 0;
 void checkGoal(double x, double y) {
     int i = 0;
     for (Point checkpoint : checkpoints) {
-        double dist = getDistance(checkpoint.x, checkpoint.y, x, y);
+        double dist = CalcDistance(checkpoint.x, checkpoint.y, x, y);
         if (dist <= 3.0) {
-            std::cout<<"!!! sekarang di ("<<x<<", "<<y<<") dengan jarak "<<dist<<" dari ckpt ("<<checkpoint.x<<", "<<checkpoint.y<<std::endl;
+            std::cout<<"!!! now at ("<<x<<", "<<y<<") with distance "<<dist<<" from ckpt ("<<checkpoint.x<<", "<<checkpoint.y<<std::endl;
             if (!isVisited[i]) {
-                cntGoal++;
+                Goal++;
                 isVisited[i] = 1;
             }
         }
@@ -283,24 +198,24 @@ void checkGoal(double x, double y) {
     }
 }
 
-double sumDistance = 0.0;
+double TotalDistance = 0.0;
 bool isInitialized = false;
-double energy = 0.0;
+double Energy = 0.0;
 int localTargetCnt = -1;
-auto timeStart = std::chrono::system_clock::now();
+auto Start = std::chrono::system_clock::now();
 
 void commentSection() {
     std::cout << std::fixed;
     std::cout << std::setprecision(2);
     auto now = std::chrono::system_clock::now();
-    double duration = (std::chrono::duration_cast<std::chrono::milliseconds>(now - timeStart)).count() / 1000.0;
-    if (targetList.empty()) {
-        std::cout<<"KELAR GAN, jarak: "<<sumDistance<<", waktu: "<<duration<<", energi: "<<(energy / 100000)<<", ckpt: "<<cntGoal<<std::endl;
+    double duration = (std::chrono::duration_cast<std::chrono::milliseconds>(now - Start)).count() / 1000.0;
+    if (coordQueue.empty()) {
+        std::cout<<"Finish, jarak: "<<TotalDistance<<", time: "<<duration<<", energy: "<<(Energy / 100000)<<", ckpt: "<<Goal<<std::endl;
         return;
     }
     if (localTargetCnt != cntTarget) {
         localTargetCnt = cntTarget;
-        std::cout<<"target: "<<cntTarget<<", jarak: "<<sumDistance<<", waktu: "<<duration<<", energi: "<<(energy / 100000)<<", ckpt: "<<cntGoal<<std::endl;
+        std::cout<<"target: "<<cntTarget<<", distance: "<<TotalDistance<<", waktu: "<<duration<<", energi: "<<(Energy / 100000)<<", ckpt: "<<Goal<<std::endl;
     }
 }
 
@@ -321,7 +236,7 @@ void calculateEnergy(const nav_msgs::Odometry::ConstPtr& msg, double newX, doubl
     if (dt < 1.0) return;
     lastTime = now;
     
-    double distance = getDistance(lastSampledX, lastSampledY, newX, newY);
+    double distance = CalcDistance(lastSampledX, lastSampledY, newX, newY);
     double velocity = distance / dt;
     double acceleration = (velocity - priorVelocity) / dt;
     priorVelocity = velocity;
@@ -331,233 +246,235 @@ void calculateEnergy(const nav_msgs::Odometry::ConstPtr& msg, double newX, doubl
     // calculate forces acting against the moving vehicle
     double force = (mass * g * friction) + (0.5 * rho * drag_coeff * area * (velocity * velocity)) + (mass * acceleration);
     
-    // calculate energy used
-    double energyUsage = force * distance;
+    // calculate Energy used
+    double EnergyUsage = force * distance;
     
-    energy += energyUsage;
+    Energy += EnergyUsage;
 }
 /* ======================================== */
 #endif
 
+double CalcDistance(double x1, double y1, double x2, double y2) {
+    return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+}
 
-/* ======================================== */
-/* ====== target definition section ======= */
-/* ======================================== */
+double CalcDistance_notsqrt(double x1, double y1, double x2, double y2) {
+    double p = x1 - x2, q = y1 - y2;
+    return p * p + q * q;
+}
+
+double CalcAngle(double x, double y) {
+    // mengembalikan sudut dari vektor (x, y) relatif terhadap Totalbu x (0 <= sudut <= 2 * pi)
+    
+    double res = std::acos((-x) / sqrt(x * x + y * y));
+    
+    if (y < 0) {
+        res *= -1;
+    }
+    if (res < 0) {
+        res += 2 * PI;
+    }
+    return res;
+}
+
 void initTarget() {
     // menyimpan target
     
     // belok kiri segitiga
-      targetList.push(Target{-93, -13, MAJU});
-    targetList.push(Target{-100, -18, MAJU});
-    targetList.push(Target{-129, -45.5, MAJU});
-    targetList.push(Target{-143, -55, MAJU});
-    targetList.push(Target{-145.75, -75.7, MAJU});
+    coordQueue.push(Target{-93, -13, FORWARD});
+    coordQueue.push(Target{-100, -18, FORWARD});
+    coordQueue.push(Target{-129, -45.5, FORWARD});
+    coordQueue.push(Target{-143, -55, FORWARD});
+    coordQueue.push(Target{-145.75, -75.7, FORWARD});
 
-    // mundur, belok kiri
-    targetList.push(Target{-145.47, -7.79, MUNDUR});
-    targetList.push(Target{-145.47, -0.9, MUNDUR});
-    targetList.push(Target{-145.47, -0.9, MUNDUR});
-    targetList.push(Target{-104.58, -0.5, MUNDUR});
-    targetList.push(Target{-52.68, -0.91, MUNDUR});
+    // BACKWARD, belok kiri
+    coordQueue.push(Target{-145.47, -7.79, BACKWARD});
+    coordQueue.push(Target{-145.47, -0.9, BACKWARD});
+    coordQueue.push(Target{-145.47, -0.9, BACKWARD});
+    coordQueue.push(Target{-104.58, -0.5, BACKWARD});
+    coordQueue.push(Target{-52.68, -0.91, BACKWARD});
 
-    // maju lawan arah, belok kanan, lurus
-    targetList.push(Target{-77.86, -0.91, MAJU});
-    targetList.push(Target{-77.86, 20, MAJU});
+    // FORWARD lawan arah, belok kanan, lurus
+    coordQueue.push(Target{-77.86, -0.91, FORWARD});
+    coordQueue.push(Target{-77.86, 20, FORWARD});
     
-    // maju, belok kanan
-    targetList.push(Target{-77.86, 145, MAJU});
-    targetList.push(Target{-77, 171, MAJU});
-    targetList.push(Target{-75.1, 181.2, MAJU});
-    targetList.push(Target{-64, 193, MAJU});
-    targetList.push(Target{-53.3, 194.16, MAJU});
-    targetList.push(Target{-15.45, 194.16, MAJU});
+    // FORWARD, belok kanan
+    coordQueue.push(Target{-77.86, 145, FORWARD});
+    coordQueue.push(Target{-77, 171, FORWARD});
+    coordQueue.push(Target{-75.1, 181.2, FORWARD});
+    coordQueue.push(Target{-64, 193, FORWARD});
+    coordQueue.push(Target{-53.3, 194.16, FORWARD});
+    coordQueue.push(Target{-15.45, 194.16, FORWARD});
     
     //belok kanan lurus
-    targetList.push(Target{-6.1, 191.5, MAJU});
-    targetList.push(Target{-2.6, 185.2, MAJU});
-    targetList.push(Target{-3.3, 177.4, MAJU});
-    targetList.push(Target{-3.7, 151.0, MAJU});
-    targetList.push(Target{-4.32, 110.51, MAJU});
-    targetList.push(Target{-6.7, 34.8, MAJU});
+    coordQueue.push(Target{-6.1, 191.5, FORWARD});
+    coordQueue.push(Target{-2.6, 185.2, FORWARD});
+    coordQueue.push(Target{-3.3, 177.4, FORWARD});
+    coordQueue.push(Target{-3.7, 151.0, FORWARD});
+    coordQueue.push(Target{-4.32, 110.51, FORWARD});
+    coordQueue.push(Target{-6.7, 34.8, FORWARD});
     
     //bunderan
-    targetList.push(Target{-9.8, 23.9, MAJU});
-    targetList.push(Target{-18.4, 8.9, MAJU});
-    targetList.push(Target{-21.7, -1.2, MAJU});
-    targetList.push(Target{-19.2, -10.4, MAJU});
-    targetList.push(Target{-12.9, -17.6, MAJU});
-    targetList.push(Target{-2.3, -22.1, MAJU});
-    targetList.push(Target{9.3, -19.4, MAJU});
-    targetList.push(Target{19.3, -10.0, MAJU});
-    targetList.push(Target{24.6, -7.3, MAJU});
+    coordQueue.push(Target{-9.8, 23.9, FORWARD});
+    coordQueue.push(Target{-18.4, 8.9, FORWARD});
+    coordQueue.push(Target{-21.7, -1.2, FORWARD});
+    coordQueue.push(Target{-19.2, -10.4, FORWARD});
+    coordQueue.push(Target{-12.9, -17.6, FORWARD});
+    coordQueue.push(Target{-2.3, -22.1, FORWARD});
+    coordQueue.push(Target{9.3, -19.4, FORWARD});
+    coordQueue.push(Target{19.3, -10.0, FORWARD});
+    coordQueue.push(Target{24.6, -7.3, FORWARD});
     
     //lurus, belok kanan
-    targetList.push(Target{30.5, -7.1, MAJU});
-    targetList.push(Target{220.1, -9.7, MAJU});
-    targetList.push(Target{226.4, -13.1, MAJU});
-    targetList.push(Target{230.8, -19.1, MAJU});
-    targetList.push(Target{231.1, -24.9, MAJU});
+    coordQueue.push(Target{30.5, -7.1, FORWARD});
+    coordQueue.push(Target{220.1, -9.7, FORWARD});
+    coordQueue.push(Target{226.4, -13.1, FORWARD});
+    coordQueue.push(Target{230.8, -19.1, FORWARD});
+    coordQueue.push(Target{231.1, -24.9, FORWARD});
     
     //belok kanan, lurus
-    targetList.push(Target{230.7, -45.8, MAJU});
-    targetList.push(Target{226.9, -52.8, MAJU});
-    targetList.push(Target{220.7, -57.3, MAJU});
-    targetList.push(Target{213.8, -58.1, MAJU});
+    coordQueue.push(Target{230.7, -45.8, FORWARD});
+    coordQueue.push(Target{226.9, -52.8, FORWARD});
+    coordQueue.push(Target{220.7, -57.3, FORWARD});
+    coordQueue.push(Target{213.8, -58.1, FORWARD});
     
     //belok kiri
-    targetList.push(Target{180.9, -58.3, MAJU});
-    targetList.push(Target{170.1, -65.0, MAJU});
-    targetList.push(Target{167.2, -73.6, MAJU});
-    targetList.push(Target{167.1, -87.5, MAJU});
+    coordQueue.push(Target{180.9, -58.3, FORWARD});
+    coordQueue.push(Target{170.1, -65.0, FORWARD});
+    coordQueue.push(Target{167.2, -73.6, FORWARD});
+    coordQueue.push(Target{167.1, -87.5, FORWARD});
     
     //belok kanan panjang
-    targetList.push(Target{166.5, -96.9, MAJU});
-    targetList.push(Target{164.1, -105.4, MAJU});
-    targetList.push(Target{158.4, -115.1, MAJU});
-    targetList.push(Target{154.0, -120.2, MAJU});
-    targetList.push(Target{146.8, -125.1, MAJU});
-    targetList.push(Target{139.7, -127.8, MAJU});
-    targetList.push(Target{133.2, -128.8, MAJU});
+    coordQueue.push(Target{166.5, -96.9, FORWARD});
+    coordQueue.push(Target{164.1, -105.4, FORWARD});
+    coordQueue.push(Target{158.4, -115.1, FORWARD});
+    coordQueue.push(Target{154.0, -120.2, FORWARD});
+    coordQueue.push(Target{146.8, -125.1, FORWARD});
+    coordQueue.push(Target{139.7, -127.8, FORWARD});
+    coordQueue.push(Target{133.2, -128.8, FORWARD});
     
     //lurus, belok kiri
-    targetList.push(Target{5.2, -130.7, MAJU});
-    targetList.push(Target{-5.5, -135.1, MAJU});
-    targetList.push(Target{-8.6, -141.6, MAJU});
+    coordQueue.push(Target{5.2, -130.7, FORWARD});
+    coordQueue.push(Target{-5.5, -135.1, FORWARD});
+    coordQueue.push(Target{-8.6, -141.6, FORWARD});
     
     //lurus, belok kanan, lurus
-    targetList.push(Target{-8.9, -147.5, MAJU});
-    targetList.push(Target{-8.8, -188.6, MAJU});
-    targetList.push(Target{-9.2, -193.1, MAJU});
-    targetList.push(Target{-13.3, -196.0, MAJU});
-    targetList.push(Target{-19.2, -196.9, MAJU});
-    targetList.push(Target{-38.7, -196.9, MAJU});
-    targetList.push(Target{-50.6, -193.6, MAJU});
+    coordQueue.push(Target{-8.9, -147.5, FORWARD});
+    coordQueue.push(Target{-8.8, -188.6, FORWARD});
+    coordQueue.push(Target{-9.2, -193.1, FORWARD});
+    coordQueue.push(Target{-13.3, -196.0, FORWARD});
+    coordQueue.push(Target{-19.2, -196.9, FORWARD});
+    coordQueue.push(Target{-38.7, -196.9, FORWARD});
+    coordQueue.push(Target{-50.6, -193.6, FORWARD});
 }
-/* ======================================== */
 
 
-/* ======================================== */
-/* ======= callback section =============== */
-/* ======================================== */
-void odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
-    double newX = msg->pose.pose.position.x;
-    double newY = msg->pose.pose.position.y;
-    
-    #ifdef LOCAL_COMMENTING
-        checkGoal(newX, newY);
-        if (isInitialized) {
-            sumDistance += getDistance(lastX, lastY, newX, newY);
-        } else {
-            isInitialized = true;
-        }
-        calculateEnergy(msg, newX, newY);
-        commentSection();
-    #endif
-    
-    if (newX == lastX && newY == lastY) {
+voidmovetoNewCoords(const nav_msgs::Odometry::ConstPtr& msg) {
+    double coordsX = msg->pose.pose.position.x;
+    double coordsY = msg->pose.pose.position.y;
+
+    if (coordsX == lastX && coordsY == lastY) {
         // kalau belum berubah posisi, tidak perlu melakukan apa-apa
         return;
     }
-    if (targetList.empty()) {
+    if (coordQueue.empty()) {
         // update value global vars
-        lastX = newX;
-        lastY = newY;
+        lastX = coordsX;
+        lastY = coordsY;
         return;
     }
-    // sumDistance += getDistance(newX, newY, lastX, lastY);
-    // jika tidak ada target, maka berhenti
-    // jika ada target, maka cek apakah kita sedang menuju ke target atau malah sudah menjauhi target
-    // jika kita sudah menjauhi target, maka kita perlu menuju target selanjutnya
-    // jika masih ada target, maka kita harus berusaha mendekati target
-    Target target = targetList.front();
-    double distance = getDistance_notsqrt(target.x, target.y, newX, newY);
-    if (distance < 25) {
-        targetList.pop();
-        cntTarget++;
+
+    ROS_INFO("newX = %f & newY = %f", coordsX, coorsY);
+
+    coordQueue target = coordQueue.front(); //Find most upper queue
+    double distance = CalcDistance_notsqrt(target.x, target.y, newX, newY);
+
+    if(distance < 20) { //safe distance for the confirmed checkpoint
+        coordQueue.pop();
     }
-    if (targetList.empty()){
-        throttle(0.0);
-        brake(1.0);
-        handbrake(true);
-        #ifdef LOCAL_COMMENTING
-            commentSection();
-        #endif
-        ros::Duration(1.0).sleep();
-        return;
+
+    if (coordQueue.empty()){
+        set_throttle(0.0)
+        set_brake(1.0);
+        set_handbrake(true);
     }
-    
-    target = targetList.front();
-    
-    switch(target.maju_mundur) {
-        case MAJU:
-            gear("forward");
+
+    switch(target.fwrd_bwrd) {
+        case FORWARD:
+            set_gear("forward");
             steerMult = 1.0;
             break;
-        case MUNDUR:
-            gear("reverse");
+        case BACKWARD:
+            set_gear("reverse");
             steerMult = -1.0;
             break;
-    }
-    vecX1 = newX - lastX;
-    vecY1 = newY - lastY;
-    vecX2 = target.x - newX;
-    vecY2 = target.y - newY;
-    angle1 = getAngle(vecX1, vecY1);
-    angle2 = getAngle(vecX2, vecY2);
-    angle = angle2 - angle1;
+            
+    angle = CalcAngle(target.x - coordsX, target.y - coordsY); - CalcAngle(coordsX - lastX, coordsY - lastY);
     
     // konversi 0 <= angle <= 2*PI ke -PI < angle <= PI
     // berguna untuk mencari steeringValue
     if (angle > PI) { 
         angle -= PI_TIMES_2;
     }
-    if (angle <= -1 * PI) {
+    else if (angle <= -1 * PI) {
         angle += PI_TIMES_2;
     }
             
-    // value dari steering, dihitung untuk rentang -1.0 (full right) sampai 1.0 (full left)
-    // asumsi itu untuk sudut 90 derajat hingga -90 derajat
     steerVal = angle / (PI_DIV_2);
     if (steerVal < -0.65) {
         steerVal = -1.0;
     }
-    if (steerVal > 0.65) {
+    else if (steerVal > 0.65) {
         steerVal = 1.0;
     }
-    steering(steerVal * steerMult);    
+    steering(steerVal * steerMult);  
+      
     // update value global vars
-    lastX = newX;
-    lastY = newY;
-}
+    lastX = coordsX;
+    lastY = coordsY;
+    }
 
-void speedometerCallback (const std_msgs::Float32::ConstPtr& msg) {
+
+    
+}
+void speedometerCallback(const std_msgs::Float32::ConstPtr& msg) {
     if (msg->data >= 10) {
         targetThrottle = 0.3;
     } else {
         targetThrottle = 0.6;
     }
     throttle(targetThrottle);
+
+    ROS_INFO("speed = %f", speed);
 }
-/* ======================================== */
 
 
-/* ======================================== */
-/* ========== main section ================ */
-/* ======================================== */
 int main(int argc, char **argv) {
+    //Initialize the ros
     ros::init(argc, argv, "shell_simulation_node");
-    ros::NodeHandle nh;
-    throttlePublisher = nh.advertise<std_msgs::Float64>("throttle_command", 8);
-    brakePublisher = nh.advertise<std_msgs::Float64>("brake_command", 8);
-    gearPublisher = nh.advertise<std_msgs::String>("gear_command", 8);
-    handbrakePublisher = nh.advertise<std_msgs::Bool>("handbrake_command", 8);
-    steeringPublisher = nh.advertise<std_msgs::Float64>("steering_command", 8);
+
+    //Creating Ros handle
+    ros::NodeHandle n;
+
+    //Publishe to certain topic
+    brake_Pub = n.advertise<std_msgs::Float64>("brake_command", 8);
+    throttle_Pub = n.advertise<std_msgs::Float64>("throttle_command", 8);
+    steering_Pub = n.advertise<std_msgs::Float64>("steering_command", 8);
+    gear_Pub = n.advertise<std_msgs::String>("gear_command", 8);
+    handbrake_Pub = n.advertise<std_msgs::Bool>("handbrake_command", 8);
+    
     initTarget();
-    ros::Duration(1.0).sleep(); //sleep for a second to ensure the publisher is connected to subscriber
-    odomSubscriber = nh.subscribe("carla/ego_vehicle/odometry", 8, odomCallback);
-    speedometerSubscriber = nh.subscribe("carla/ego_vehicle/speedometer", 8, speedometerCallback);
+    //Subscribe to certain topic
+    ros::Duration(1.0).sleep(); 
+    odometry_Sub = n.subscribe("carla/ego_vehicle/odometry", 8, movetoNewCoords);
+    speedometer_Sub = n.subscribe("carla/ego_vehicle/speedometer", 8, speedometerCallback);
+    ros::Rate rate(10);
     ros::spin();
+    return 0;
 }
-/* ======================================== */
+
+// //misal ini adalah sebuah program
+
+
 
 // git config --global http.proxy http://152.118.148.7:3128
